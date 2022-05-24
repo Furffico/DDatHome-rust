@@ -3,7 +3,11 @@ use std::{net::TcpStream};
 use std::time::Duration;
 use std::thread::sleep;
 
+mod utils;
 mod dddhttp;
+mod getconfig;
+use getconfig::getconfig;
+use utils::timeprefix;
 
 fn session(socket:&mut WebSocket<MaybeTlsStream<TcpStream>>)->Result<(),Box<dyn std::error::Error>>{
     socket.write_message("DDDhttp".into())?;
@@ -20,16 +24,19 @@ fn session(socket:&mut WebSocket<MaybeTlsStream<TcpStream>>)->Result<(),Box<dyn 
 }
 
 fn main() {
-    let (mut socket, response) =
-        connect("wss://cluster.vtbs.moe/?runtime=rust1.61.0&version=0.1&platform=linux&uuid=37ad8ceb-80aa-42b6-b33d-a949edc8924b&name=nagakawa.3").expect("Can't connect to the server");
+    let config=getconfig();
 
-    println!("Connected to the server");
-    println!("Response HTTP code: {}", response.status());
+    let url=config.geturl();
+    println!("[{}] Running client with url: {}",timeprefix(),&url);
+
+    let (mut socket, _)=connect(&url).expect("Can't connect to the server");
+
+    println!("[{}] Connected to the server",timeprefix());
     
     loop {
-        sleep(Duration::from_secs(1));
+        sleep(Duration::from_millis(config.interval));
         match session(&mut socket){
-            Err(e)=>println!("Error occurred: {:?}",e),
+            Err(e)=>println!("[{}] Error occurred: {:?}",timeprefix(),e),
             _=>{},
         };
     }
