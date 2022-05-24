@@ -20,8 +20,8 @@ struct Args {
     #[clap(short='n', long="name", default_value="")]
     name: String,
 
-    /// The uuid of this client (for statistics), randomly generated for default
-    #[clap(short='u', long="uuid")]
+    /// The uuid of this client (for statistics)
+    #[clap(short='u', long="uuid",default_value="random generated")]
     uuid:String,
 
     /// The interval(ms) between task execution
@@ -45,10 +45,12 @@ fn parse_configfile(path:&str,config:&mut Config)-> Result<(),Box<dyn std::error
     let value=json::parse(&contents)?;
 
     match value["name"].as_str(){
+        Some("")=>{},
         Some(name)=>config.name=name.to_string(),
         None=>{},
     };
     match value["baseurl"].as_str(){
+        Some("")=>{},
         Some(baseurl)=>config.baseurl=baseurl.to_string(),
         None=>{},
     };
@@ -57,6 +59,7 @@ fn parse_configfile(path:&str,config:&mut Config)-> Result<(),Box<dyn std::error
         None=>{},
     };
     match value["uuid"].as_str(){
+        Some("")=>{},
         Some(uuid)=>config.uuid=Uuid::parse_str(uuid)?,
         None=>{},
     };
