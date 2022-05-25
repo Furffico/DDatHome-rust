@@ -2,11 +2,28 @@ use json;
 use std::time::Duration;
 use std::thread::sleep;
 use std::error::Error;
-use crate::utils::timeprefix;
+use crate::getconfig::Config;
+use reqwest::blocking::{ClientBuilder,Client};
+use tungstenite::{connect, WebSocket, stream::MaybeTlsStream};
+use std::net::TcpStream;
+use chrono::Local;
 
-pub enum DDDPack{
+macro_rules! log {
+    ( $($p:expr),* ; $($x:expr),* ) => {
+        {
+            print!("[{}]",Local::now().format("%Y-%m-%d %H:%M:%S").to_string());
+            $(
+                print!("[{}]",$p);
+            )* 
+            print!(" ");
+            println!($($x),*);
+        }
+    };
+}
+
+enum DDDPack{
     Task { key:String, url:String },
-    Wait { key:String },
+    Wait,
 }
 
 impl DDDPack{
@@ -18,36 +35,88 @@ impl DDDPack{
                 key:value["key"].as_str().ok_or(DDDPackError::KeyError("key `key` not found in taskjson.".to_string()))?.to_string(),
                 url:value["data"]["url"].as_str().ok_or(DDDPackError::KeyError("key `data.url` not found in taskjson.".to_string()))?.to_string(),
             }),
-            Some("wait") => Ok(DDDPack::Wait{
-                key:value["key"].as_str().unwrap_or("").to_string(),
-            }),
-            None=>Err(Box::new(DDDPackError::UnknownTaskError("No task type received".to_string()))),
+            Some("wait") => Ok(DDDPack::Wait{}),
+            None=>Err(Box::new(DDDPackError::KeyError("No task type received".to_string()))),
             _ => Err(Box::new(DDDPackError::UnknownTaskError(format!("Unknown type: {}",tasktype.unwrap())))),
-        }
-    }
-    pub fn execute(&self)->Result<Option<String>,Box<dyn Error>>{
-        match self{
-            DDDPack::Task{key,url}=>{
-                println!("[{}][{}] Executing task: {}",timeprefix(),key,url);
-                let client= reqwest::blocking::ClientBuilder::new().use_rustls_tls().build()?;
-                let result=client.get(url).send()?.text()?;
-                let response=json::object!{
-                    key:&key[..],
-                    data:result,
-                }.dump();
-                println!("[{}][{}] Task executed.",timeprefix(),key);
-                Ok(Some(response))
-            },
-            DDDPack::Wait{key:_}=>{
-                println!("[{}] Sleep for 5 seconds.",timeprefix());
-                sleep(Duration::from_secs(5));
-                Ok(None)
-            },
         }
     }
 }
 
 
+pub struct DDDClient{
+    config: Config,
+    socket: WebSocket<MaybeTlsStream<TcpStream>>,
+    httpclient: Client,
+    tasks: Vec<DDDPack>,
+}
+
+impl DDDClient{
+    pub fn new(config:Config)->Self{
+        let url=config.geturl();
+        log!(;"Running client with url: {}",&url);
+
+        let (socket, _)=connect(&url).expect("Can't connect to the server");
+        log!(;"Connected to the server");
+
+        let dddclient=DDDClient{
+            config:config,
+            socket:socket,
+            httpclient: ClientBuilder::new().use_rustls_tls().build().expect("can't build http client"),
+            tasks:vec![]
+        };
+        dddclient
+    }
+
+    pub fn mainloop(&mut self){
+        loop {
+            sleep(self.config.interval);
+            match self.session(){
+                Err(e)=>log!(;"Error occurred: {:?}",e),
+                _=>{},
+            };
+        }
+    }
+
+    fn session(&mut self)->Result<(),Box<dyn std::error::Error>>{
+        self.fetchtask()?;
+        match self.process_task()?{
+            Some(data)=>{
+                self.socket.write_message(data.into())?;
+            },
+            None=>{},
+        }
+        Ok(())
+    }
+
+    fn fetchtask(&mut self)->Result<(),Box<dyn std::error::Error>>{
+        self.socket.write_message("DDDhttp".into())?;
+        let msg = self.socket.read_message()?;
+        let task=DDDPack::bind(msg.into_text()?)?;
+        self.tasks.push(task);
+        Ok(())
+    }
+
+    fn process_task(&mut self)->Result<Option<String>,Box<dyn Error>>{
+        match self.tasks.pop(){
+            Some(DDDPack::Task{key,url})=>{
+                log!(key;"Processing task: {}",url);
+                let result=self.httpclient.get(url).send()?.text()?;
+                let response=json::object!{
+                    key:&key[..],
+                    data:result,
+                }.dump();
+                log!(key;"Task processed");
+                Ok(Some(response))
+            },
+            Some(DDDPack::Wait)=>{
+                log!(;"Sleep for 5 seconds.");
+                sleep(Duration::from_secs(5));
+                Ok(None)
+            },
+            None=>Ok(None),
+        }
+    }
+}
 
 
 #[derive(Debug)]

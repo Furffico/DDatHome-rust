@@ -5,6 +5,7 @@ use uuid::Uuid;
 use clap::Parser;
 use url::Url;
 use std::env;
+use std::time::Duration;
 
 pub const VERSION:&str="0.1.1";
 
@@ -35,7 +36,7 @@ pub struct Config {
     pub baseurl:String,
     pub name: String,
     pub uuid: Uuid,
-    pub interval: u64,
+    pub interval: Duration,
 }
 
 fn parse_configfile(path:&str,config:&mut Config)-> Result<(),Box<dyn std::error::Error>>{
@@ -45,23 +46,20 @@ fn parse_configfile(path:&str,config:&mut Config)-> Result<(),Box<dyn std::error
     let value=json::parse(&contents)?;
 
     match value["name"].as_str(){
-        Some("")=>{},
+        Some("") | None =>{},
         Some(name)=>config.name=name.to_string(),
-        None=>{},
     };
     match value["baseurl"].as_str(){
-        Some("")=>{},
+        Some("") | None =>{},
         Some(baseurl)=>config.baseurl=baseurl.to_string(),
-        None=>{},
     };
     match value["interval"].as_u64(){
-        Some(interval)=>config.interval=interval,
+        Some(interval)=>config.interval=Duration::from_millis(interval),
         None=>{},
     };
     match value["uuid"].as_str(){
-        Some("")=>{},
+        Some("") | None =>{},
         Some(uuid)=>config.uuid=Uuid::parse_str(uuid)?,
-        None=>{},
     };
     Ok(())
 }
@@ -73,13 +71,13 @@ pub fn getconfig()->Config{
         baseurl:args.baseurl,
         name:args.name,
         uuid:if args.uuid.len()==36{Uuid::parse_str(&args.uuid).unwrap_or(Uuid::new_v4())}else{Uuid::new_v4()},
-        interval:args.interval,
+        interval:Duration::from_millis(args.interval),
     };
 
     // get config from json
-    let cfgpath=Path::new("./config.json");
-    if cfgpath.is_file(){
-        match parse_configfile("./config.json",&mut config){
+    let cfgpath="./config.json";
+    if Path::new(cfgpath).is_file(){
+        match parse_configfile(cfgpath,&mut config){
             Ok(_)=>return config,
             _=>{},
         };
