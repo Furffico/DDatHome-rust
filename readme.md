@@ -14,8 +14,11 @@ Related repos:
 ## Usage
 
 ### cli
-Please download the executable from [github releases](https://github.com/Furffico/ddathome-rust/releases), then run the program in terminal with parameters as follows.
+Please download the executable from [github releases](https://github.com/Furffico/ddathome-rust/releases), then run the program in terminal.
 ```
+USAGE:
+    ddathome-rust [OPTIONS]
+
 OPTIONS:
     -b, --baseurl <BASEURL>      The baseurl of the server [default: wss://cluster.vtbs.moe]
     -h, --help                   Print help information
