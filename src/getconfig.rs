@@ -6,7 +6,7 @@ use clap::Parser;
 use url::Url;
 use std::env;
 
-pub const VERSION:&str="0.1.0";
+pub const VERSION:&str="0.1.1";
 
 /// A Rust implimentation of dd@home client
 #[derive(Parser, Debug)]
@@ -95,12 +95,13 @@ impl Config{
             panic!("baseurl is not a ws or wss url");
         }
         url.set_query(Some(
-            &format!("runtime=rust&platform={}&version={}&name={}&uuid={}",
-            match std::env::var("PLATFORM"){
-                Ok(value)=>if value=="docker"{"docker"}else{env::consts::OS},
-                _=> env::consts::OS
-            } ,VERSION,&self.name,&self.uuid.to_string())
-        ));
+            &format!("runtime=rust&platform={}&version={}&name={}&uuid={}{}",
+            env::consts::OS,VERSION,&self.name,&self.uuid.to_string(),
+            match std::env::var("DOCKER"){
+                Ok(value)=>if value=="docker"{"&docker=docker"}else{""},
+                _=> ""
+            }
+        )));
         url.to_string()
     }
 }

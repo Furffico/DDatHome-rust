@@ -2,7 +2,6 @@ use json;
 use std::time::Duration;
 use std::thread::sleep;
 use std::error::Error;
-use reqwest::blocking::get;
 use crate::utils::timeprefix;
 
 pub enum DDDPack{
@@ -30,7 +29,8 @@ impl DDDPack{
         match self{
             DDDPack::Task{key,url}=>{
                 println!("[{}][{}] Executing task: {}",timeprefix(),key,url);
-                let result=get(url)?.text()?;
+                let client= reqwest::blocking::ClientBuilder::new().use_rustls_tls().build()?;
+                let result=client.get(url).send()?.text()?;
                 let response=json::object!{
                     key:&key[..],
                     data:result,
