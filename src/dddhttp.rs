@@ -109,8 +109,9 @@ impl DDDClient{
         self.cleanup();
         let url=self.config.geturl();
         let mut trycount=1;
+        let retrydisplay=if self.config.retry>0{self.config.retry.to_string()}else{String::from("inf")};
         loop {
-            log!(;"Trying to connect to the server... ({}/10)",trycount);
+            log!(;"Trying to connect to the server... ({}/{})",trycount,retrydisplay);
             match connect(&url){
                 Ok((socket,_))=>{
                     log!(;"Reconnected.");
@@ -120,8 +121,8 @@ impl DDDClient{
                 Err(e)=>{
                     trycount+=1;
                     log!(;"Error occurred: {:?}",e);
-                    if trycount>10{
-                        panic!("Can't connect to the server after 10 tries. Program exiting.");
+                    if self.config.retry>0 && trycount>self.config.retry{
+                        panic!("Can't connect to the server after {} tries. Program exiting.",self.config.retry);
                     }else{
                         log!(;"Wait for 30 seconds until next try.");
                         sleep(Duration::from_secs(30));

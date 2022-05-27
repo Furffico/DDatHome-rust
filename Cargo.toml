@@ -1,9 +1,9 @@
 [package]
 name = "ddathome-rust"
-version = "0.1.1"
+version = "0.1.3"
 edition = "2021"
 [[bin]]
-name = "ddathome"
+name = "ddathome-rust"
 path = "src/main.rs"
 
 
