@@ -7,7 +7,7 @@ use url::Url;
 use std::env;
 use std::time::Duration;
 
-pub const VERSION:&str="0.1.1";
+pub const VERSION:&str="0.1.2";
 
 /// A Rust implimentation of dd@home client
 #[derive(Parser, Debug)]

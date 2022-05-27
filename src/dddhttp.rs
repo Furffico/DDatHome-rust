@@ -1,10 +1,11 @@
 use json;
+use core::panic;
 use std::time::Duration;
 use std::thread::sleep;
 use std::error::Error;
 use crate::getconfig::Config;
 use reqwest::blocking::{ClientBuilder,Client};
-use tungstenite::{connect, WebSocket, stream::MaybeTlsStream};
+use tungstenite::{connect, WebSocket, stream::MaybeTlsStream,Error as WSError};
 use std::net::TcpStream;
 use chrono::Local;
 
@@ -71,7 +72,11 @@ impl DDDClient{
         loop {
             sleep(self.config.interval);
             match self.session(){
-                Err(e)=>log!(;"Error occurred: {:?}",e),
+                Err(e)=>{
+                    log!(;"Error occurred: {:?}",e);
+                    log!(;"Sleep for 30 seconds.");
+                    sleep(Duration::from_secs(30));
+                },
                 _=>{},
             };
         }
@@ -81,15 +86,53 @@ impl DDDClient{
         self.fetchtask()?;
         match self.process_task()?{
             Some(data)=>{
-                self.socket.write_message(data.into())?;
+                self.writemessage(&data[..])?;
             },
             None=>{},
         }
         Ok(())
     }
 
+    fn writemessage(& mut self,msg:&str)->Result<(),WSError>{
+        match self.socket.write_message(msg.into()){
+            Err(WSError::ConnectionClosed)|Err(WSError::Io(_))|Err(WSError::AlreadyClosed)|Err(WSError::SendQueueFull(_))=>{
+                self.reconnect();
+                self.socket.write_message(msg.into())?;
+                Ok(())
+            },
+            Err(e)=>Err(e),
+            _=>{Ok(())},
+        }
+    }
+
+    fn reconnect(&mut self){
+        self.cleanup();
+        let url=self.config.geturl();
+        let mut trycount=1;
+        loop {
+            log!(;"Trying to connect to the server... ({}/10)",trycount);
+            match connect(&url){
+                Ok((socket,_))=>{
+                    log!(;"Reconnected.");
+                    self.socket=socket;
+                    break;
+                },
+                Err(e)=>{
+                    trycount+=1;
+                    log!(;"Error occurred: {:?}",e);
+                    if trycount>10{
+                        panic!("Can't connect to the server after 10 tries. Program exiting.");
+                    }else{
+                        log!(;"Wait for 30 seconds until next try.");
+                        sleep(Duration::from_secs(30));
+                    }
+                },
+            }
+        }
+    }
+
     fn fetchtask(&mut self)->Result<(),Box<dyn std::error::Error>>{
-        self.socket.write_message("DDDhttp".into())?;
+        self.writemessage("DDDhttp")?;
         let msg = self.socket.read_message()?;
         let task=DDDPack::bind(msg.into_text()?)?;
         self.tasks.push(task);
@@ -114,6 +157,12 @@ impl DDDClient{
                 Ok(None)
             },
             None=>Ok(None),
+        }
+    }
+
+    fn cleanup(&mut self){
+        if self.socket.can_write(){
+            _=self.socket.close(None).unwrap_err();
         }
     }
 }
