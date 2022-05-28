@@ -56,3 +56,9 @@ This is an example for config file (config.json):
     "retry": 5
 }
 ```
+
+## To-dos
+
+- [ ] refactor with [tokio](https://tokio.rs/) to support asyncio.
+- [ ] 仿照 [nodejs版本](https://github.com/dd-center/DDatHome-nodejs) 写出弹幕转发功能（咕咕咕）。
+- [ ] 根据学的时候看到的更好的写法对代码进行优化。
