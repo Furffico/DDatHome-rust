@@ -13,7 +13,7 @@ pub const VERSION:&str=env!("CARGO_PKG_VERSION");
 #[derive(Parser, Debug)]
 #[clap(author="furffico@github", version=VERSION )]
 struct Args {
-    /// The path to the config json file. If file not exists, a default config file will be created.
+    /// The path to the config json file. If the file does not exist, a default config file will be created.
     #[clap(short='c', long="config")]
     config:Option<String>,
 
@@ -25,7 +25,7 @@ struct Args {
     #[clap(short='n', long="name")]
     name: Option<String>,
 
-    /// The uuid of this client (for statistics), randomly generated for default
+    /// The uuid of this client (for statistics), randomly generated for default.
     #[clap(short='u', long="uuid")]
     uuid:Option<String>,
 
@@ -97,7 +97,7 @@ fn parse_configfile(path:&str)-> Result<ConfigOpt,Box<dyn std::error::Error>>{
 
 pub fn getconfig()->Config{
     let args = Args::parse();
-    let config_path=args.config.clone();
+    let config_path=args.config.clone().or(env::var("CONFIG").ok());
 
     // default config 
     let mut config=Config{

@@ -12,26 +12,47 @@ Related repos:
 *最近在学rust，于是造个轮子练练手。*
 
 ## Usage
+### Executable
 
-### cli
-Please download the executable from [github releases](https://github.com/Furffico/ddathome-rust/releases), then run the program in terminal.
-```
-USAGE:
-    ddathome-rust [OPTIONS]
-
-OPTIONS:
-    -b, --baseurl <BASEURL>      The baseurl of the server [default: wss://cluster.vtbs.moe]
-    -h, --help                   Print help information
-    -i, --interval <INTERVAL>    The interval(ms) between task execution [default: 500]
-    -n, --name <NAME>            The name of the client (for statistics) [default: ]
-    -u, --uuid <UUID>            The uuid of this client (for statistics) [default: "random generated"]
-    -V, --version                Print version information
-```
+Download and run the executable binary for your platform from [github releases](https://github.com/Furffico/ddathome-rust/releases).
 
 ### Docker
 
-Please create the container with following commands, where `[OPTIONS]` follow the same rule as above:
+Of course you should have docker engine preinstalled on your device, otherwise please use the method above.
+
+Create the container with the following commands:
 ```bash
 $ docker pull furffy/ddathome-rust
 $ docker run [DOCKER PARAMETERS] furffy/ddathome-rust [OPTIONS]
+```
+
+## Configuration
+
+Priority: **defaults** < **ENV** < **config file** < **cli parameters**
+
+| cli | env | json key | default | description | 
+|----|-----|-----|----|----|
+| `-b <baseurl>` | `BASEURL` | `"baseurl"` | `"wss://cluster.vtbs.moe"` | The baseurl of the server |
+| `-n <name>` | `NAME` | `"name"` | `""` | The name of the client |
+| `-u <uuid>` | `UUID` | `"uuid"` | (randomly generated) | The uuid of this client |
+| `-i <interval>` | `INTERVAL` | `"interval"`| `500` | The interval(ms) between task execution |
+| `-r <retry>` | `RETRY` | `"retry"` | `5` | Count of retries on connection failure.<br> Set to 0 for infinite retries. |
+| `-c <config>` | `CONFIG` | -- | -- | Path to config file.<br>If the file does not exist, one with default config will be created. |
+| `-h` | -- | -- | -- | Print help information |
+| `-v` | -- | -- | -- | Print version information |
+
+This is an example for cli options:
+```bash
+$ ./ddathome-rust -n ddknight -u 65469de3-31c8-4f0d-b85c-8ea8c9422619 -i 1000
+```
+
+This is an example for config file (config.json):
+```json
+{
+    "name": "ddknight",
+    "baseurl": "wss://cluster.vtbs.moe",
+    "uuid": "c5a14755-137e-4dc9-8e94-b01c03f1e7a4",
+    "interval": 500,
+    "retry": 5
+}
 ```

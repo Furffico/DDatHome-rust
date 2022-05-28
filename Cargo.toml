@@ -6,7 +6,6 @@ edition = "2021"
 name = "ddathome-rust"
 path = "src/main.rs"
 
-
 [dependencies]
 tungstenite = { version = "0.17.2",features = ["rustls-tls-webpki-roots"] }
 json = "0.12.4"
