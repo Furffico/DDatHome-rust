@@ -9,16 +9,14 @@ Related repos:
 - DD@Home-go: https://github.com/dd-center/DDatHome-go
 - DD@Home-python: https://github.com/Radekyspec/DDatHome-python
 
-*最近在学rust，于是造个轮子练练手。*
+*最近在学rust，于是造个轮子练练手。*（才注意到ddcenter下也有个ddathome-rust的repo）
 
 ## Usage
 ### Executable
 
-Download and run the executable binary for your platform from [github releases](https://github.com/Furffico/ddathome-rust/releases).
+Download and run the executable binary for your platform from [github releases](https://github.com/Furffico/DDatHome-rust/releases).
 
 ### Docker
-
-Of course you should have docker engine preinstalled on your device, otherwise please use the method above.
 
 Create the container with the following commands:
 ```bash
@@ -59,6 +57,5 @@ This is an example for config file (config.json):
 
 ## To-dos
 
-- [ ] refactor with [tokio](https://tokio.rs/) to support asyncio.
+- [ ] Refactor with [tokio](https://tokio.rs/) to support asyncio.
 - [ ] 仿照 [nodejs版本](https://github.com/dd-center/DDatHome-nodejs) 写出弹幕转发功能（咕咕咕）。
-- [ ] 根据学的时候看到的更好的写法对代码进行优化。
